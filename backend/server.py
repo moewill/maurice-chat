@@ -43,12 +43,15 @@ app.add_middleware(
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    print("WebSocket connection accepted")
+    print(f"WebSocket connection attempt from {websocket.client}")
     try:
+        await websocket.accept()
+        print("WebSocket connection accepted")
         await run_bot(websocket)
     except Exception as e:
-        print(f"Exception in run_bot: {e}")
+        print(f"Exception in WebSocket handler: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 @app.get("/health")
@@ -64,6 +67,7 @@ async def bot_connect(request: Request) -> Dict[Any, Any]:
     # Return RTVI-compatible response format
     return {
         "room_url": f"ws://{host}/ws",
+        "ws_url": f"ws://{host}/ws",  # Alternative property name
         "token": "dummy_token",  # Required by some RTVI implementations
         "config": [],  # RTVI config array
         "endpoints": {

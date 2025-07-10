@@ -149,6 +149,11 @@ export class MauriceVoiceAgent {
             console.log('Bot ready:', data)
             this.setupMediaTracks()
           },
+          onError: (error) => {
+            console.error('RTVI Client error:', error)
+            this.addToConversation('system', `Connection error: ${error.message || 'Unknown error'}`)
+            // Don't disconnect on service errors, just log them
+          },
           onUserTranscript: (data) => {
             if (data.final) {
               this.addToConversation('user', data.text)

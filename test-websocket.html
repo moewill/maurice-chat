@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    <button onclick="testWebSocket()">Test WebSocket Connection</button>
+    <div id="log"></div>
+
+    <script>
+        function log(message) {
+            document.getElementById('log').innerHTML += '<p>' + new Date().toISOString() + ': ' + message + '</p>';
+        }
+
+        function testWebSocket() {
+            log('Attempting to connect to ws://localhost:7860/ws');
+            
+            const ws = new WebSocket('ws://localhost:7860/ws');
+            
+            ws.onopen = function() {
+                log('✅ WebSocket connection opened successfully!');
+            };
+            
+            ws.onmessage = function(event) {
+                log('📨 Received message: ' + event.data);
+            };
+            
+            ws.onerror = function(error) {
+                log('❌ WebSocket error: ' + JSON.stringify(error));
+            };
+            
+            ws.onclose = function(event) {
+                log(`🔌 WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`);
+            };
+            
+            // Try to send a test message after 1 second
+            setTimeout(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    log('📤 Sending test message');
+                    ws.send('Hello WebSocket!');
+                } else {
+                    log('❌ WebSocket not open, state: ' + ws.readyState);
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

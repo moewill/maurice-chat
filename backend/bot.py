@@ -37,6 +37,8 @@ Start by greeting the user warmly and asking how you can help them today."""
 
 
 async def run_bot(websocket_client):
+    logger.info("Starting run_bot function")
+    
     # Check for required environment variables
     anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
     deepgram_api_key = os.getenv("DEEPGRAM_API_KEY")
@@ -47,32 +49,49 @@ async def run_bot(websocket_client):
     if not deepgram_api_key:
         logger.error("DEEPGRAM_API_KEY environment variable is required")
         return
+    
+    logger.info("Environment variables validated")
 
-    # WebSocket transport for client communication
-    ws_transport = FastAPIWebsocketTransport(
-        websocket=websocket_client,
-        params=FastAPIWebsocketParams(
-            audio_in_enabled=True,
-            audio_out_enabled=True,
-            add_wav_header=False,
-            vad_analyzer=SileroVADAnalyzer(),
-            serializer=ProtobufFrameSerializer(),
+    try:
+        logger.info("Creating WebSocket transport")
+        # WebSocket transport for client communication
+        ws_transport = FastAPIWebsocketTransport(
+            websocket=websocket_client,
+            params=FastAPIWebsocketParams(
+                audio_in_enabled=True,
+                audio_out_enabled=True,
+                add_wav_header=False,
+                vad_analyzer=SileroVADAnalyzer(),
+                serializer=ProtobufFrameSerializer(),
+            )
         )
-    )
+        logger.info("WebSocket transport created successfully")
+    except Exception as e:
+        logger.error(f"Failed to create WebSocket transport: {e}")
+        raise
 
-    # Speech-to-Text service
-    stt = DeepgramSTTService(
-        api_key=deepgram_api_key,
-        model="nova-2",
-        language="en",
-        smart_format=True,
-    )
+    # For now, let's create a simple passthrough for STT to test connection
+    # We'll add a simple processor that just passes text through
+    from pipecat.processors.filters.function_filter import FunctionFilter
+    
+    def simple_stt_passthrough(frame):
+        # Just pass through any text frames, ignore audio for now
+        return frame
+    
+    stt = FunctionFilter(simple_stt_passthrough)
+    logger.info("Using passthrough STT for testing")
 
-    # Text-to-Speech service
-    tts = DeepgramTTSService(
-        api_key=deepgram_api_key,
-        voice="aura-asteria-en",
-    )
+    try:
+        logger.info("Creating Deepgram TTS service")
+        # Text-to-Speech service
+        tts = DeepgramTTSService(
+            api_key=deepgram_api_key,
+            voice="aura-asteria-en",
+        )
+        logger.info("Deepgram TTS service created")
+    except Exception as e:
+        logger.error(f"Failed to create Deepgram TTS service: {e}")
+        raise
 
     # Large Language Model service
     llm = AnthropicLLMService(
