@@ -121,9 +121,13 @@ export class MauriceVoiceAgent {
       this.addToConversation('system', 'Initializing connection...')
 
       const config: RTVIClientOptions = {
+        params: {
+          baseUrl: 'http://localhost:7860',
+          endpoints: {
+            connect: '/connect'
+          }
+        },
         transport: new WebSocketTransport(),
-        enableMic: true,
-        enableCam: false,
         callbacks: {
           onConnected: () => {
             this.updateStatus('connected', 'Connected')
@@ -175,9 +179,7 @@ export class MauriceVoiceAgent {
       await this.client.initDevices()
 
       this.addToConversation('system', 'Connecting to server...')
-      await this.client.connect({
-        endpoint: 'http://localhost:7860/connect'
-      })
+      await this.client.connect()
 
     } catch (error) {
       console.error('Connection error:', error)

@@ -51,9 +51,26 @@ async def websocket_endpoint(websocket: WebSocket):
         print(f"Exception in run_bot: {e}")
 
 
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "maurice-chat-backend"}
+
+
 @app.post("/connect")
 async def bot_connect(request: Request) -> Dict[Any, Any]:
-    return {"ws_url": "ws://localhost:7860/ws"}
+    # Get the host from the request to ensure proper connection
+    host = request.headers.get("host", "localhost:7860")
+    
+    # Return RTVI-compatible response format
+    return {
+        "room_url": f"ws://{host}/ws",
+        "token": "dummy_token",  # Required by some RTVI implementations
+        "config": [],  # RTVI config array
+        "endpoints": {
+            "connect": "/connect",
+            "action": "/action"
+        }
+    }
 
 
 if __name__ == "__main__":
