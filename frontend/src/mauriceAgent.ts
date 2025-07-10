@@ -1,8 +1,8 @@
-import { PipecatClient, PipecatClientOptions, RTVIEvent } from '@pipecat-ai/client-js'
+import { RTVIClient, RTVIClientOptions, RTVIEvent } from '@pipecat-ai/client-js'
 import { WebSocketTransport } from '@pipecat-ai/websocket-transport'
 
 export class MauriceVoiceAgent {
-  private client: PipecatClient | null = null
+  private client: RTVIClient | null = null
   private connectBtn: HTMLButtonElement
   private disconnectBtn: HTMLButtonElement
   private statusIndicator: HTMLElement
@@ -120,7 +120,7 @@ export class MauriceVoiceAgent {
       this.connectBtn.disabled = true
       this.addToConversation('system', 'Initializing connection...')
 
-      const config: PipecatClientOptions = {
+      const config: RTVIClientOptions = {
         transport: new WebSocketTransport(),
         enableMic: true,
         enableCam: false,
@@ -168,7 +168,7 @@ export class MauriceVoiceAgent {
         }
       }
 
-      this.client = new PipecatClient(config)
+      this.client = new RTVIClient(config)
       this.setupTrackListeners()
 
       this.addToConversation('system', 'Initializing microphone...')
