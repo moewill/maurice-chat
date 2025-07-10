@@ -8,15 +8,59 @@
 
 import asyncio
 import os
+from contextlib import asynccontextmanager
+from typing import Any, Dict
+
+import uvicorn
 from dotenv import load_dotenv
+from fastapi import FastAPI, Request, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
 
-from bot import run_voice_agent
+from bot import run_bot
 
-load_dotenv()
+# Load environment variables
+load_dotenv(override=True)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handles FastAPI startup and shutdown."""
+    yield  # Run app
+
+
+# Initialize FastAPI app with lifespan manager
+app = FastAPI(lifespan=lifespan)
+
+# Configure CORS to allow requests from any origin
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    print("WebSocket connection accepted")
+    try:
+        await run_bot(websocket)
+    except Exception as e:
+        print(f"Exception in run_bot: {e}")
+
+
+@app.post("/connect")
+async def bot_connect(request: Request) -> Dict[Any, Any]:
+    return {"ws_url": "ws://localhost:7860/ws"}
+
 
 if __name__ == "__main__":
-    host = os.getenv("WEBSOCKET_HOST", "localhost")
+    host = os.getenv("WEBSOCKET_HOST", "0.0.0.0")
     port = int(os.getenv("WEBSOCKET_PORT", 7860))
     
     print(f"Starting voice agent server on {host}:{port}")
-    asyncio.run(run_voice_agent())
+    config = uvicorn.Config(app, host=host, port=port)
+    server = uvicorn.Server(config)
+    asyncio.run(server.serve())

@@ -61,10 +61,12 @@ echo "✅ API keys are configured"
 echo
 
 echo "🏗️  Building Docker containers..."
+echo "   This may take several minutes for the first build..."
 if docker-compose build; then
     echo "✅ Docker containers built successfully"
 else
     echo "❌ Failed to build Docker containers"
+    echo "   Check the error messages above and ensure Docker has enough resources"
     exit 1
 fi
 
