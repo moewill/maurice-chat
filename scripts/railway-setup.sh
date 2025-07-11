@@ -49,10 +49,19 @@ else
     exit 1
 fi
 
-if [ -f "requirements.txt" ] || [ -f "backend/requirements.txt" ]; then
-    print_success "Requirements file found"
+if [ -f "requirements.txt" ]; then
+    print_success "Root requirements.txt found"
+elif [ -f "backend/requirements.txt" ]; then
+    print_success "Backend requirements.txt found"
 else
     print_error "requirements.txt not found - this is required for Railway deployment"
+    exit 1
+fi
+
+if [ -f "backend/server.py" ]; then
+    print_success "Backend server.py found"
+else
+    print_error "backend/server.py not found - this is the main application"
     exit 1
 fi
 
