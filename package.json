@@ -1,0 +1,15 @@
+{
+  "name": "maurice-chat-netlify",
+  "version": "1.0.0",
+  "description": "Netlify Functions for Maurice Chat",
+  "main": "netlify/functions/chat.js",
+  "scripts": {
+    "build": "echo 'No build step required for Netlify Functions'"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.17.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
