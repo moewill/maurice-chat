@@ -15,6 +15,7 @@ import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from bot import run_bot
 
@@ -86,19 +87,19 @@ async def bot_connect(request: Request) -> Dict[Any, Any]:
 
 
 @app.post("/api/chat")
-async def text_chat(request: Request) -> Dict[Any, Any]:
+async def text_chat(request: Request):
     """Handle text-only chat requests (uses Haiku model for speed and cost efficiency)"""
     try:
         body = await request.json()
         user_message = body.get("message", "")
         
         if not user_message:
-            return {"error": "Message is required"}
+            return JSONResponse({"error": "Message is required"}, status_code=400)
         
         # Check for required environment variables
         anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
         if not anthropic_api_key:
-            return {"error": "Anthropic API key not configured"}
+            return JSONResponse({"error": "Anthropic API key not configured"}, status_code=500)
         
         # Import Anthropic client
         from anthropic import Anthropic
@@ -154,15 +155,15 @@ When answering questions:
             ]
         )
         
-        return {
+        return JSONResponse({
             "response": response.content[0].text,
             "model": "claude-3-haiku-20240307",
             "timestamp": "2024-07-11"
-        }
+        })
         
     except Exception as e:
         print(f"Text chat error: {e}")
-        return {"error": "Internal server error"}
+        return JSONResponse({"error": "Internal server error"}, status_code=500)
 
 
 if __name__ == "__main__":
