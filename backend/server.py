@@ -93,12 +93,12 @@ async def text_chat(request: Request) -> Dict[Any, Any]:
         user_message = body.get("message", "")
         
         if not user_message:
-            return {"error": "Message is required"}, 400
+            return {"error": "Message is required"}
         
         # Check for required environment variables
         anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
         if not anthropic_api_key:
-            return {"error": "Anthropic API key not configured"}, 500
+            return {"error": "Anthropic API key not configured"}
         
         # Import Anthropic client
         from anthropic import Anthropic
@@ -162,7 +162,7 @@ When answering questions:
         
     except Exception as e:
         print(f"Text chat error: {e}")
-        return {"error": "Internal server error"}, 500
+        return {"error": "Internal server error"}
 
 
 if __name__ == "__main__":
