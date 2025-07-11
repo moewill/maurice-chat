@@ -19,6 +19,65 @@ from fastapi.responses import JSONResponse
 
 from bot import run_bot
 
+# Helper function for text responses
+async def get_claude_response_text(user_message: str) -> str:
+    """Get Claude response for text messages"""
+    try:
+        anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not anthropic_api_key:
+            return "AI service temporarily unavailable. Please try again later."
+        
+        from anthropic import Anthropic
+        client = Anthropic(api_key=anthropic_api_key)
+        
+        system_prompt = """You are Maurice Rashad's AI assistant. You help potential clients learn about Maurice's background, services, and expertise. Be professional, helpful, and encouraging about contacting Maurice for consultations.
+
+Maurice Rashad is a technology consultant with 10+ years of experience. He offers:
+
+1. Strategic Consulting ($100/month, 2x 1-hour calls)
+   - Strategic planning sessions
+   - Technology roadmap development
+   - Problem-solving workshops
+   - Growth strategy recommendations
+
+2. Technology Services ($75/hour)
+   - Custom automation solutions
+   - Website development & fixes
+   - App development
+   - Hosting & migration services
+
+3. Expert Workshops ($99 each)
+   - AI Agents & Automation
+   - Cybersecurity Fundamentals
+   - Modern Web Development
+   - Cloud Technologies
+
+Contact: mauricerashad@gmail.com
+Response time: Within 24 hours
+Availability: Global, Remote-First
+
+Key stats: 50+ businesses transformed, 99% client satisfaction, 24/7 support available.
+
+When answering questions:
+- Be specific about Maurice's experience and expertise
+- Include relevant pricing when discussing services
+- Encourage users to contact Maurice for consultations
+- Keep responses concise but informative
+- Always maintain a professional and friendly tone"""
+        
+        response = client.messages.create(
+            model="claude-3-haiku-20240307",
+            max_tokens=500,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_message}]
+        )
+        
+        return response.content[0].text
+        
+    except Exception as e:
+        print(f"Claude API error: {e}")
+        return "I apologize, but I'm having trouble connecting to the AI service right now. Please try again in a moment, or contact Maurice directly at mauricerashad@gmail.com."
+
 # Load environment variables
 load_dotenv(override=True)
 
@@ -56,9 +115,46 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         await websocket.accept()
         print("WebSocket connection accepted")
-        await run_bot(websocket)
+        
+        # Simple WebSocket handler for now
+        await websocket.send_json({
+            "type": "connected",
+            "message": "Voice chat connected! Start speaking..."
+        })
+        
+        while True:
+            try:
+                data = await websocket.receive_json()
+                print(f"Received WebSocket data: {data}")
+                
+                if data.get("type") == "audio":
+                    # For now, just echo back that we received audio
+                    await websocket.send_json({
+                        "type": "transcript",
+                        "content": "Audio received - processing..."
+                    })
+                    
+                    # Send back a test response
+                    await websocket.send_json({
+                        "type": "response",
+                        "content": "This is a test response from the voice chat system. The audio processing is being implemented."
+                    })
+                    
+                elif data.get("type") == "text":
+                    # Handle text messages via WebSocket
+                    user_message = data.get("message", "")
+                    response = await get_claude_response_text(user_message)
+                    await websocket.send_json({
+                        "type": "response",
+                        "content": response
+                    })
+                    
+            except Exception as e:
+                print(f"WebSocket message error: {e}")
+                break
+                
     except Exception as e:
-        print(f"Exception in WebSocket handler: {e}")
+        print(f"WebSocket connection error: {e}")
         import traceback
         traceback.print_exc()
 
