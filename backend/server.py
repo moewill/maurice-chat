@@ -78,6 +78,65 @@ When answering questions:
         print(f"Claude API error: {e}")
         return "I apologize, but I'm having trouble connecting to the AI service right now. Please try again in a moment, or contact Maurice directly at mauricerashad@gmail.com."
 
+# Helper function for Deepgram speech-to-text
+async def process_audio_with_deepgram(base64_audio_data: str) -> str:
+    """Process audio data with Deepgram API"""
+    try:
+        deepgram_api_key = os.getenv("DEEPGRAM_API_KEY")
+        if not deepgram_api_key:
+            print("Deepgram API key not configured")
+            return ""
+        
+        import base64
+        import httpx
+        
+        # Decode base64 audio
+        audio_bytes = base64.b64decode(base64_audio_data)
+        
+        # Deepgram API endpoint
+        url = "https://api.deepgram.com/v1/listen"
+        
+        headers = {
+            "Authorization": f"Token {deepgram_api_key}",
+            "Content-Type": "audio/webm"
+        }
+        
+        params = {
+            "model": "nova-2",
+            "language": "en-US",
+            "smart_format": "true",
+            "punctuate": "true",
+            "interim_results": "false"
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                url,
+                headers=headers,
+                params=params,
+                content=audio_bytes,
+                timeout=10.0
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                alternatives = result.get("results", {}).get("channels", [{}])[0].get("alternatives", [])
+                
+                if alternatives and alternatives[0].get("transcript"):
+                    transcript = alternatives[0]["transcript"].strip()
+                    print(f"Deepgram transcript: {transcript}")
+                    return transcript
+                else:
+                    print("No transcript found in Deepgram response")
+                    return ""
+            else:
+                print(f"Deepgram API error: {response.status_code} - {response.text}")
+                return ""
+                
+    except Exception as e:
+        print(f"Deepgram processing error: {e}")
+        return ""
+
 # Load environment variables
 load_dotenv(override=True)
 
@@ -128,17 +187,37 @@ async def websocket_endpoint(websocket: WebSocket):
                 print(f"Received WebSocket data: {data}")
                 
                 if data.get("type") == "audio":
-                    # For now, just echo back that we received audio
-                    await websocket.send_json({
-                        "type": "transcript",
-                        "content": "Audio received - processing..."
-                    })
-                    
-                    # Send back a test response
-                    await websocket.send_json({
-                        "type": "response",
-                        "content": "This is a test response from the voice chat system. The audio processing is being implemented."
-                    })
+                    # Process audio with Deepgram
+                    audio_data = data.get("data", "")
+                    if audio_data:
+                        transcript = await process_audio_with_deepgram(audio_data)
+                        
+                        if transcript:
+                            # Send live transcription
+                            await websocket.send_json({
+                                "type": "transcript",
+                                "content": transcript
+                            })
+                            
+                            # Get Claude response
+                            claude_response = await get_claude_response_text(transcript)
+                            
+                            # Send final transcript and response
+                            await websocket.send_json({
+                                "type": "final_transcript",
+                                "content": transcript
+                            })
+                            
+                            await websocket.send_json({
+                                "type": "response", 
+                                "content": claude_response
+                            })
+                        else:
+                            # Send feedback for empty/unclear audio
+                            await websocket.send_json({
+                                "type": "transcript",
+                                "content": "[listening...]"
+                            })
                     
                 elif data.get("type") == "text":
                     # Handle text messages via WebSocket
