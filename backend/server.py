@@ -85,6 +85,86 @@ async def bot_connect(request: Request) -> Dict[Any, Any]:
     }
 
 
+@app.post("/api/chat")
+async def text_chat(request: Request) -> Dict[Any, Any]:
+    """Handle text-only chat requests (uses Haiku model for speed and cost efficiency)"""
+    try:
+        body = await request.json()
+        user_message = body.get("message", "")
+        
+        if not user_message:
+            return {"error": "Message is required"}, 400
+        
+        # Check for required environment variables
+        anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not anthropic_api_key:
+            return {"error": "Anthropic API key not configured"}, 500
+        
+        # Import Anthropic client
+        from anthropic import Anthropic
+        
+        client = Anthropic(api_key=anthropic_api_key)
+        
+        # System prompt for Maurice's AI assistant
+        system_prompt = """You are Maurice Rashad's AI assistant. You help potential clients learn about Maurice's background, services, and expertise. Be professional, helpful, and encouraging about contacting Maurice for consultations.
+
+Maurice Rashad is a technology consultant with 10+ years of experience. He offers:
+
+1. Strategic Consulting ($100/month, 2x 1-hour calls)
+   - Strategic planning sessions
+   - Technology roadmap development
+   - Problem-solving workshops
+   - Growth strategy recommendations
+
+2. Technology Services ($75/hour)
+   - Custom automation solutions
+   - Website development & fixes
+   - App development
+   - Hosting & migration services
+
+3. Expert Workshops ($99 each)
+   - AI Agents & Automation
+   - Cybersecurity Fundamentals
+   - Modern Web Development
+   - Cloud Technologies
+
+Contact: mauricerashad@gmail.com
+Response time: Within 24 hours
+Availability: Global, Remote-First
+
+Key stats: 50+ businesses transformed, 99% client satisfaction, 24/7 support available.
+
+When answering questions:
+- Be specific about Maurice's experience and expertise
+- Include relevant pricing when discussing services
+- Encourage users to contact Maurice for consultations
+- Keep responses concise but informative
+- Always maintain a professional and friendly tone"""
+        
+        # Use Claude 3 Haiku for fast, cost-effective text responses
+        response = client.messages.create(
+            model="claude-3-haiku-20240307",
+            max_tokens=500,
+            system=system_prompt,
+            messages=[
+                {
+                    "role": "user",
+                    "content": user_message
+                }
+            ]
+        )
+        
+        return {
+            "response": response.content[0].text,
+            "model": "claude-3-haiku-20240307",
+            "timestamp": "2024-07-11"
+        }
+        
+    except Exception as e:
+        print(f"Text chat error: {e}")
+        return {"error": "Internal server error"}, 500
+
+
 if __name__ == "__main__":
     host = os.getenv("WEBSOCKET_HOST", "0.0.0.0")
     # Railway provides PORT environment variable, fall back to WEBSOCKET_PORT or 7860
