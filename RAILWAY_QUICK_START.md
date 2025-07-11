@@ -19,8 +19,8 @@ In Railway dashboard → **"Variables"** tab:
 ANTHROPIC_API_KEY=sk-ant-your-key-here
 DEEPGRAM_API_KEY=your-deepgram-key-here
 WEBSOCKET_HOST=0.0.0.0
-WEBSOCKET_PORT=7860
 ```
+**Note**: Railway automatically sets the `PORT` environment variable - don't set `WEBSOCKET_PORT`
 
 ### 4. Get Your URL
 - **"Settings"** → **"Networking"** → **"Generate Domain"**

@@ -14,7 +14,6 @@
     "production": {
       "variables": {
         "WEBSOCKET_HOST": "0.0.0.0",
-        "WEBSOCKET_PORT": "7860",
         "LOG_LEVEL": "INFO",
         "PYTHONUNBUFFERED": "1"
       }

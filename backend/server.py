@@ -25,7 +25,15 @@ load_dotenv(override=True)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handles FastAPI startup and shutdown."""
+    print("🚀 FastAPI application starting up...")
+    print(f"📝 Environment variables loaded:")
+    print(f"   - PORT: {os.getenv('PORT', 'Not set')}")
+    print(f"   - WEBSOCKET_PORT: {os.getenv('WEBSOCKET_PORT', 'Not set')}")
+    print(f"   - WEBSOCKET_HOST: {os.getenv('WEBSOCKET_HOST', 'Not set')}")
+    print(f"   - ANTHROPIC_API_KEY: {'Set' if os.getenv('ANTHROPIC_API_KEY') else 'Not set'}")
+    print(f"   - DEEPGRAM_API_KEY: {'Set' if os.getenv('DEEPGRAM_API_KEY') else 'Not set'}")
     yield  # Run app
+    print("🛑 FastAPI application shutting down...")
 
 
 # Initialize FastAPI app with lifespan manager
@@ -56,7 +64,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "maurice-chat-backend"}
+    return {"status": "healthy", "service": "maurice-chat-backend", "timestamp": "2024-07-11"}
 
 
 @app.post("/connect")
@@ -79,7 +87,8 @@ async def bot_connect(request: Request) -> Dict[Any, Any]:
 
 if __name__ == "__main__":
     host = os.getenv("WEBSOCKET_HOST", "0.0.0.0")
-    port = int(os.getenv("WEBSOCKET_PORT", 7860))
+    # Railway provides PORT environment variable, fall back to WEBSOCKET_PORT or 7860
+    port = int(os.getenv("PORT", os.getenv("WEBSOCKET_PORT", 7860)))
     
     print(f"Starting voice agent server on {host}:{port}")
     config = uvicorn.Config(app, host=host, port=port)
